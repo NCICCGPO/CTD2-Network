@@ -1,0 +1,181 @@
+---
+title: "iTalk, Receptor-Ligand pairs between NK and K14 cells"
+author: "Hildur and Manisha"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+suppressMessages(library(iTALK))
+suppressMessages(library(magrittr))
+suppressMessages(library(dplyr))
+suppressMessages(library(data.table))
+
+inFolder = "data/"
+outFolder = "results/"
+```
+
+## K14 differentially expressed genes and NK all genes
+
+
+```{r}
+
+#get all genes; split by cell types
+highly_exprs_genes<-read.table(paste0(inFolder,'allNK_K14de.txt'),sep='\t',header=T,stringsAsFactors = F)
+cells1 <- c('hNK','K14+','K14-')
+cells2 <- c('teNK','K14+','K14-')
+hNK_gene_set <- subset(highly_exprs_genes, cell_type %in% cells1)
+write.table(hNK_gene_set,paste0(outFolder,"hNK_gene_set.txt"),sep="\t",row.names=FALSE,quote=FALSE)
+teNK_gene_set <- subset(highly_exprs_genes, cell_type %in% cells2)
+write.table(teNK_gene_set,paste0(outFolder,"teNK_gene_set.txt"),sep="\t",row.names=FALSE,quote=FALSE)
+
+#find the ligand-receptor pairs from highly expressed genes
+comm_list<-c('growth factor','cytokine','other')
+
+cell_col<-structure(c('#4a84ad','#52c63b','#b79eed','#e874bf'),names=unique(highly_exprs_genes$cell_type))
+sub1 <- structure(c('#4a84ad','#52c63b','#b79eed'),names=unique(hNK_gene_set$cell_type))
+sub2 <- structure(c('#4a84ad','#52c63b','#e874bf'),names=unique(teNK_gene_set$cell_type))
+
+par(mfrow=c(1,2))
+
+res_hNK_all<-NULL
+res_teNK_all <- NULL
+res_hNK <- NULL
+res_teNK <- NULL
+
+#find non-autocrine interactions involving hNK in these categories: growth factor, cytokine, and other
+for(comm_type in comm_list)
+{
+    res_cat<-FindLR(hNK_gene_set,datatype='mean count',comm_type=comm_type)
+    hNK_int <- res_cat %>% filter((cell_to=='K14+' & cell_from=='K14-') | (cell_to=='K14+' & cell_from=='hNK') | (cell_to=='K14-' & cell_from=='K14+') | (cell_to=='K14-' & cell_from=='hNK') | (cell_to=='hNK' & cell_from=='K14+') | (cell_to=='hNK' & cell_from=='K14-'))
+    res_cat<- res_cat[order(res_cat$cell_from_mean_exprs*res_cat$cell_to_mean_exprs,decreasing=T),]
+    hNK_int <- hNK_int[order(hNK_int$cell_from_mean_exprs*hNK_int$cell_to_mean_exprs,decreasing=T),]
+    
+    #plot by ligand category
+    #overall network plot
+    pdf(paste0(outFolder,"Netview_",comm_type,"_K14de_hNKall.pdf"),width=7,height = 8)
+    NetView(res_cat,col=sub1,vertex.label.cex=1,arrow.width=1,edge.max.width=5)
+    dev.off()
+    
+    #top ligand-receptor pairs
+    pairs=9
+    pdf(paste0(outFolder,"Circos_",comm_type,"_K14de_hNKall.pdf"),width=7,height = 8)
+    LRPlot(hNK_int[1:pairs,],datatype='mean count',cell_col=sub1,link.arr.lwd=hNK_int$cell_from_mean_exprs[1:pairs],link.arr.width=hNK_int$cell_to_mean_exprs[1:pairs])
+    dev.off()
+    
+    #all interactions
+    res_hNK_all <-rbind(res_hNK_all,res_cat)
+    
+    #only non-autocrine interactions
+    res_hNK <-rbind(res_hNK,hNK_int)
+}
+
+#find non-autocrine interactions involving hNK in these categories: checkpoint
+comm_type <- 'checkpoint'
+res_cat<-FindLR(hNK_gene_set,datatype='mean count',comm_type=comm_type)
+hNK_int <- res_cat %>% filter((cell_to=='K14+' & cell_from=='K14-') | (cell_to=='K14+' & cell_from=='hNK') | (cell_to=='K14-' & cell_from=='K14+') | (cell_to=='K14-' & cell_from=='hNK') | (cell_to=='hNK' & cell_from=='K14+') | (cell_to=='hNK' & cell_from=='K14-'))
+res_cat<- res_cat[order(res_cat$cell_from_mean_exprs*res_cat$cell_to_mean_exprs,decreasing=T),]
+hNK_int <- hNK_int[order(hNK_int$cell_from_mean_exprs*hNK_int$cell_to_mean_exprs,decreasing=T),]
+    
+#plot by ligand category
+#overall network plot
+pdf(paste0(outFolder,"Netview_",comm_type,"_K14de_hNKall.pdf"),width=7,height = 8)
+NetView(res_cat,col=sub1,vertex.label.cex=1,arrow.width=1,edge.max.width=5)
+dev.off()
+    
+#top ligand-receptor pairs
+#pairs=2
+#pdf(paste("Circos_",comm_type,"_K14de_hNKall.pdf"),width=7,height = 8)
+#LRPlot(hNK_int[1:pairs,],datatype='mean count',cell_col=sub1,link.arr.lwd=hNK_int$cell_from_mean_exprs[1:pairs],link.arr.width=hNK_int$cell_to_mean_exprs[1:pairs])
+#dev.off()
+
+res_hNK_all<-rbind(res_hNK_all,res_cat)
+res_hNK<-rbind(res_hNK,hNK_int)
+
+
+#find non-autocrine interactions involving teNK in these categories: growth factor, cytokine, and other
+for(comm_type in comm_list)
+{
+    res_cat<-FindLR(teNK_gene_set,datatype='mean count',comm_type=comm_type)
+    teNK_int <- res_cat %>% filter((cell_to=='K14+' & cell_from=='K14-') | (cell_to=='K14+' & cell_from=='teNK') | (cell_to=='K14-' & cell_from=='K14+') | (cell_to=='K14-' & cell_from=='teNK') | (cell_to=='teNK' & cell_from=='K14+') | (cell_to=='teNK' & cell_from=='K14-'))
+    res_cat<- res_cat[order(res_cat$cell_from_mean_exprs*res_cat$cell_to_mean_exprs,decreasing=T),]
+    teNK_int <- teNK_int[order(teNK_int$cell_from_mean_exprs*teNK_int$cell_to_mean_exprs,decreasing=T),]
+    
+    #plot by ligand category
+    #overall network plot
+    pdf(paste0(outFolder,"Netview_",comm_type,"_K14de_teNKall.pdf"),width=7,height = 8)
+    NetView(res_cat,col=sub2,vertex.label.cex=1,arrow.width=1,edge.max.width=5)
+    dev.off()
+    
+    #top ligand-receptor pairs
+    pairs=8
+    pdf(paste0(outFolder,"Circos_",comm_type,"_K14de_teNKall.pdf"),width=7,height = 8)
+    LRPlot(teNK_int[1:pairs,],datatype='mean count',cell_col=sub2,link.arr.lwd=teNK_int$cell_from_mean_exprs[1:pairs],link.arr.width=teNK_int$cell_to_mean_exprs[1:pairs])
+    dev.off()
+    
+    res_teNK_all<-rbind(res_teNK_all,res_cat)
+    res_teNK<-rbind(res_teNK,teNK_int)
+}
+
+#find non-autocrine interactions involving teNK in these categories: checkpoint
+comm_type <- 'checkpoint'
+res_cat<-FindLR(teNK_gene_set,datatype='mean count',comm_type=comm_type)
+teNK_int <- res_cat %>% filter((cell_to=='K14+' & cell_from=='K14-') | (cell_to=='K14+' & cell_from=='teNK') | (cell_to=='K14-' & cell_from=='K14+') | (cell_to=='K14-' & cell_from=='teNK') | (cell_to=='teNK' & cell_from=='K14+') | (cell_to=='teNK' & cell_from=='K14-'))
+res_cat<- res_cat[order(res_cat$cell_from_mean_exprs*res_cat$cell_to_mean_exprs,decreasing=T),]
+teNK_int <- teNK_int[order(teNK_int$cell_from_mean_exprs*teNK_int$cell_to_mean_exprs,decreasing=T),]
+    
+#plot by ligand category
+#overall network plot
+pdf(paste0(outFolder,"Netview_",comm_type,"_K14de_teNKall.pdf"),width=7,height = 8)
+NetView(res_cat,col=sub2,vertex.label.cex=1,arrow.width=1,edge.max.width=5)
+dev.off()
+
+res_teNK_all<-rbind(res_teNK_all,res_cat)
+res_teNK<-rbind(res_teNK,teNK_int)
+```
+
+
+```{r}
+
+res_hNK_all <- res_hNK_all[order(res_hNK_all$cell_from_mean_exprs*res_hNK_all$cell_to_mean_exprs,decreasing=T),] #[1:20,]
+res_hNK <- res_hNK[order(res_hNK$cell_from_mean_exprs*res_hNK$cell_to_mean_exprs,decreasing=T),] #[1:20,]
+res_teNK_all <- res_teNK_all[order(res_teNK_all$cell_from_mean_exprs*res_teNK_all$cell_to_mean_exprs,decreasing=T),] #[1:20,]
+res_teNK <- res_teNK[order(res_teNK$cell_from_mean_exprs*res_teNK$cell_to_mean_exprs,decreasing=T),] #[1:20,]
+
+#network plots for all categories, including autocrine interactions
+pdf(paste0(outFolder,"Netview_allpaths_K14de_hNKall.pdf"),width=7,height = 8)
+NetView(res_hNK_all,col=sub1,vertex.label.cex=1,arrow.width=1,edge.max.width=5)
+dev.off()
+
+pdf(paste0(outFolder,"Netview_allpaths_K14de_teNKall.pdf"),width=7,height = 8)
+NetView(res_teNK_all,col=sub2,vertex.label.cex=1,arrow.width=1,edge.max.width=5)
+dev.off()
+
+
+#Circos plots for top receptor-ligand pairs, excluding autocrine interactions
+res_hNK_100<-res_hNK[order(res_hNK$cell_from_mean_exprs*res_hNK$cell_to_mean_exprs,decreasing=T),][1:100,]
+res_teNK_100<-res_teNK[order(res_teNK$cell_from_mean_exprs*res_teNK$cell_to_mean_exprs,decreasing=T),][1:100,]
+
+pdf(paste0(outFolder,"Circos_allpaths_K14de_hNKall.pdf"),width=7,height = 8)
+LRPlot(res_hNK_100,datatype='mean count',cell_col=sub1)
+dev.off()
+
+pdf(paste0(outFolder,"Circos_allpaths_K14de_teNKall.pdf"),width=7,height = 8)
+LRPlot(res_teNK_100,datatype='mean count',cell_col=sub2)
+dev.off()
+
+```
+
+#Save the pathways into table
+```{r}
+res_hNK <- res_hNK[order(res_hNK$cell_from_mean_exprs*res_hNK$cell_to_mean_exprs,decreasing=T),]
+res_teNK <- res_teNK[order(res_teNK$cell_from_mean_exprs*res_teNK$cell_to_mean_exprs,decreasing=T),]
+
+wb = openxlsx::createWorkbook(creator = "Manisha")
+openxlsx::addWorksheet(wb, sheetName = "Pathways hNK")
+openxlsx::writeData(wb = wb, sheet = 1, res_hNK)
+openxlsx::addWorksheet(wb, sheetName = "Pathways teNK")
+openxlsx::writeData(wb = wb, sheet = 2, res_teNK)
+openxlsx::saveWorkbook(wb, file = paste0(outFolder,"AllPathways_K14de_NKall.xlsx"), overwrite = T)
+```
+

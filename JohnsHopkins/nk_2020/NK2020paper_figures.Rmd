@@ -1,0 +1,532 @@
+---
+title: "NK cells - visualization of DE genes"
+author: "Hildur"
+date: "January, 2019"
+output: word_document
+---
+
+hNK - NK cells from healthy donor mice
+
+teNK - NK cells from tumor-bearing mice
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, cache=TRUE, message = F)
+suppressMessages(library(DESeq2))
+suppressMessages(library(limma))
+suppressMessages(library(data.table))
+suppressMessages(library(Heatplus))
+suppressMessages(library(cetcolor))
+library(ggplot2)
+library(ggrepel)
+
+outFolder = "resultsTmp/"
+inFolder = "data/"
+
+load("NK2020_deg.rda")
+```
+
+#Visualization -heatmap
+
+Z-score matrix
+```{r heatmatrix, echo=TRUE}
+readsMatrix <- assay(dds)
+readsSizeCorrected <- readsMatrix / colSums(readsMatrix)
+
+readsLogMatrix <- log(1 + readsSizeCorrected)
+
+GeneMeans <- rowMeans(readsLogMatrix)
+GeneSDs <- rowSds(readsLogMatrix)
+
+zMatrix <- (readsLogMatrix - GeneMeans)/GeneSDs
+```
+
+
+## Differential expression
+
+
+Heatmap color scheme using red and blue from cetcolor
+
+```{r}
+library(viridis)
+library(gplots) 
+library(cetcolor) 
+v_map<-viridis_pal(alpha = 1.0, begin = 0, end = 1.0, direction = 1,
+option = "A")
+#A is for Magma, D is for default
+
+#switch to red and blue
+cet_col=cet_pal(256, name = "d1a")
+```
+
+```{r NK-specific-manuscript fig 4}
+NKgenes = c("Tigit",
+            "PDCD1",
+            "KLRG1",
+#            "Klrc1",
+#"Klrc2",
+#"Klrc3",
+"Tspan32",
+#"Klrb1",
+"Havcr2",
+"Cd96",
+"Lag3",
+"Pvrig"
+)
+NKgenes <- toupper(NKgenes)
+setkey(allresults,geneid)
+setkey(hggenes,HGNC.symbol)
+NKgenes <- NKgenes[order(-allresults[hggenes[NKgenes,Gene.stable.ID],pvalue])]
+NKgenes <- NKgenes[!is.na(NKgenes)]
+NKgenesToId<-unique(hggenes[NKgenes,Gene.stable.ID])
+NKgenesToId<- append(NKgenesToId,"ENSMUSG00000030167")
+setkey(hggenes, HGNC.symbol)
+zEMT <- zMatrix[NKgenesToId[complete.cases(zMatrix[NKgenesToId,])],]
+setkey(hggenes,Gene.stable.ID)
+rownames(zEMT) <- hggenes[match(rownames(zEMT),hggenes$Gene.stable.ID),HGNC.symbol]
+zEMT<-zEMT[complete.cases(zEMT),]
+rownames(zEMT)[is.na(rownames(zEMT))] <- "KLRC1"
+zEMT<-zEMT[unique(rownames(zEMT)),]
+
+annoCol <- data.frame(Cell = rep(c("hNK  ","teNK  "),c(4,4)))
+rownames(annoCol) <- colnames(zEMT)
+
+hm2 = pheatmap(zEMT,
+                scale = "none", cluster_cols = FALSE,
+           dendrogram = list(status = "no"),
+           #color = colorRampPalette(rev(brewer.pal(n = 7, name = "RdYlBu")))(499),
+                breaks = c(seq(from=-3, to=-.2, length.out = 50),
+                           seq(from=-.201, to=.2, length.out = 155),
+                           seq(from=.201, to=3, length.out = 50)),
+                #col = colorRampPalette(c("blue","white","red"))(499)
+           col=cet_pal(256, name = "d1a"),
+           annotation_col = annoCol, labels_col = "",
+           filename=paste0(outFolder,"NK_pheatmap_specific_manuscript_klrc1.pdf"))
+```
+
+Now an additional figure with the genes related to epigenetics
+
+```{r NK-epigen-genes  fig 5}
+NKgenes = c("DNMT1","DNMT3a","DNMT3b","hdac1",
+            "hdac2",
+            "hdac3",
+            "hdac4",
+            "hdac5",
+            "hdac6",
+            "hdac7",
+            "hdac8",
+            "hdac9",
+            "hdac10",
+            "hdac11",
+  "Tigit",
+            "PDCD1",
+            "KLRG1",
+#            "Klrc1",
+#"Klrc2",
+#"Klrc3",
+"Tspan32",
+#"Klrb1",
+"Havcr2",
+"Cd96",
+"Lag3",
+"Pvrig"
+)
+NKgenes <- toupper(NKgenes)
+setkey(allresults,geneid)
+setkey(hggenes,HGNC.symbol)
+NKgenes <- NKgenes[order(-allresults[hggenes[NKgenes,Gene.stable.ID],pvalue])]
+NKgenes <- NKgenes[!is.na(NKgenes)]
+NKgenesToId<-unique(hggenes[NKgenes,Gene.stable.ID])
+NKgenesToId<- append(NKgenesToId,"ENSMUSG00000030167")
+setkey(hggenes, HGNC.symbol)
+zEMT <- zMatrix[NKgenesToId[complete.cases(zMatrix[NKgenesToId,])],]
+setkey(hggenes,Gene.stable.ID)
+#rownames(zEMT) <- hggenes[rownames(zEMT),HGNC.symbol]
+#rownames(zEMT) <- NKgenes[complete.cases(zMatrix[NKgenesToId,])]
+rownames(zEMT) <- hggenes[match(rownames(zEMT),hggenes$Gene.stable.ID),HGNC.symbol]
+zEMT<-zEMT[complete.cases(zEMT),]
+rownames(zEMT)[is.na(rownames(zEMT))] <- "KLRC1"
+zEMT<-zEMT[unique(rownames(zEMT)),]
+
+annoCol <- data.frame(Cell = rep(c("hNK  ","teNK  "),c(4,4)))
+rownames(annoCol) <- colnames(zEMT)
+
+hm2 = pheatmap(zEMT,
+                scale = "none", cluster_cols = FALSE,
+           dendrogram = list(status = "no"),
+           #color = colorRampPalette(rev(brewer.pal(n = 7, name = "RdYlBu")))(499),
+                breaks = c(seq(from=-3, to=-.2, length.out = 50),
+                           seq(from=-.201, to=.2, length.out = 155),
+                           seq(from=.201, to=3, length.out = 50)),
+                #col = colorRampPalette(c("blue","white","red"))(499)
+           col=cet_pal(256, name = "d1a"),
+           annotation_col = annoCol, labels_col = "",
+           filename=paste0(outFolder,"NK_pheatmap_specific_manuscript_klrc1_dnmt_hdac.pdf"))
+```
+
+Without the klrg1 genes:
+
+```{r NK-epigen-genes new fig 4}
+NKgenes = c("DNMT1","DNMT3a","DNMT3b"
+            #"hdac1","hdac2","hdac3",
+            #"hdac4", "hdac5","hdac6",
+            #"hdac7","hdac8","hdac9", "hdac10", "hdac11"
+)
+NKgenes <- toupper(NKgenes)
+setkey(allresults,geneid)
+setkey(hggenes,HGNC.symbol)
+NKgenes <- NKgenes[order(-allresults[hggenes[NKgenes,Gene.stable.ID],pvalue])]
+NKgenes <- NKgenes[!is.na(NKgenes)]
+NKgenesToId<-unique(hggenes[NKgenes,Gene.stable.ID])
+setkey(hggenes, HGNC.symbol)
+zEMT <- zMatrix[NKgenesToId[complete.cases(zMatrix[NKgenesToId,])],]
+setkey(hggenes,Gene.stable.ID)
+rownames(zEMT) <- hggenes[match(rownames(zEMT),hggenes$Gene.stable.ID),HGNC.symbol]
+zEMT<-zEMT[complete.cases(zEMT),]
+zEMT<-zEMT[unique(rownames(zEMT)),]
+
+annoCol <- data.frame(Cell = rep(c("hNK  ","teNK  "),c(4,4)))
+rownames(annoCol) <- colnames(zEMT)
+
+hm2 = pheatmap(zEMT,
+               scale = "none", cluster_cols = FALSE,
+               dendrogram = list(status = "no"),
+               breaks = c(seq(from=-3, to=-.2, length.out = 50),
+                          seq(from=-.201, to=.2, length.out = 155),
+                          seq(from=.201, to=3, length.out = 50)),
+               col=cet_pal(256, name = "d1a"),
+               annotation_col = annoCol, labels_col = "",
+               filename=paste0(outFolder,"NK_pheatmap_specific_manuscript_dnmt.pdf"),height = 3)
+```
+
+
+
+```{r Pathway fig}
+library("pathview")
+suppressMessages(library(biomaRt))
+
+ensembl <-  useMart("ensembl", dataset = "mmusculus_gene_ensembl")
+
+
+ensembl2entrez <- getBM(attributes = c("ensembl_gene_id","entrezgene_id"), mart = ensembl)
+ensembl2entrez <- as.data.frame(ensembl2entrez)
+SigGenesName <- merge(x = SigGenes, y = hggenes, by.x="row", by.y="Gene.stable.ID", all.x=TRUE)
+allresults_comb <- merge(allresults, ensembl2entrez, by.x="geneid", by.y="ensembl_gene_id", all.x=T)
+allresults_comb <- allresults_comb[SigGenesName$row,]
+expr = allresults_comb$l2fc
+names(expr) = allresults_comb$entrezgene
+expr <- expr[! is.na(names(expr))]
+
+
+plotKEGG <- function(expr, pathway="04210", suffix="-l2fc", ...) {
+  pv.out <- pathview(gene.data = expr, pathway.id = pathway, 
+                   species = "mmu", out.suffix = suffix, kegg.native = T, same.layer = F, ...)
+}
+
+plotKEGG(expr, limit = c(gene = .6))
+plotKEGG(expr, pathway = "04657", limit = c(gene = 1.0))
+plotKEGG(expr, pathway = "04115", limit = c(gene = 1.0))
+```
+
+
+```{r Volcano plot}
+library("EnhancedVolcano")
+resTmp = as.data.frame(allresults)
+
+volcano <- EnhancedVolcano(resTmp,
+        lab = resTmp$HGNC.symbol,
+        x = "l2fc",
+        y = "FDR.pos",
+       selectLab = c("KLRG1","FOS","FOSB","ITGA1","GATA1","KDR","ITGA2B"),
+        pCutoff = 1.6e-6,
+        FCcutoff = 1,
+        legendPosition = 'right',
+        legendLabSize = 16,
+        legendIconSize = 4.0,
+        drawConnectors = TRUE,
+        widthConnectors = 0.2,
+        colConnectors = 'grey30',
+        transcriptPointSize = 2.5,
+        transcriptLabSize = 3.0,
+        title = "DE genes NK cells")
+pdf(paste0(outFolder,"Volcano_HNKvsteNK_SelectLabels_GeneName.pdf"),height=10, width=18)
+plot(volcano)
+dev.off()
+ 
+```
+
+##PCA analysis
+
+PCA 1 -4 using variance stabilized transform, VST.
+```{r pca-vst}
+dataPCAfilt = assay(vst(dds))
+dataPCAfilt <-dataPCAfilt[rowSums(dataPCAfilt)>5,]
+pcaAll = prcomp(t(dataPCAfilt), scale=FALSE)
+
+percentVar <- round(((pcaAll$sdev^2) / (sum(pcaAll$sdev^2)))*100)
+dtp <- data.frame('NKtype' = dds$type, 'Names'=colnames(dds), pcaAll$x[,1:4]) 
+gplot2 = ggplot(data = dtp, aes(x = PC3, y = PC4,label=Names,col = NKtype)) + 
+       geom_point(size=5) +
+       xlab(paste0("PC3: ",percentVar[3],"% variance")) +
+        ylab(paste0("PC4: ",percentVar[4],"% variance")) +
+       theme_minimal() 
+
+gplot2+ geom_text_repel()
+pdf(paste0(outFolder,"PCA_prcomp_3to4.pdf"))
+plot(gplot2+ geom_label_repel())
+dev.off()
+
+gplot3 = ggplot(data = dtp, aes(x = PC1, y = PC2,label=Names,col = NKtype)) + 
+       geom_point(size=3) +
+       xlab(paste0("PC1: ",percentVar[1],"% variance")) +
+        ylab(paste0("PC2: ",percentVar[2],"% variance")) +
+    labs(color = "Cell type") + 
+       theme_minimal() 
+
+gplot3+ geom_label_repel() + scale_color_manual(labels = c("hNK", "teNK"), values = c("blue", "red")) #  scale_color_discrete(name = "Cell", labels = c(rep("hNK",4), rep("teNK",4)))
+pdf(paste0(outFolder,"PCA_prcomp_1to2_vst.pdf"))
+plot(gplot3+ geom_label_repel()+ scale_color_manual(labels = c("hNK", "teNK"), values = c("blue", "red")))
+dev.off()
+
+
+```
+
+
+Plot all significantly DE genes
+
+```{r sigDE heatmap}
+heat2_plot_list = function(dataMat,nr_genes,file_name,dmethod,hmethod,genes) {
+  plot_filename =paste(outFolder,"HeatMap2Top",nr_genes, file_name,dmethod,"_",substring(hmethod,0,4),".pdf",sep = "")
+  if (nr_genes>250) {genes = ''}
+ dataMat <- (dataMat - rowMeans(dataMat))
+ print(quantile(dataMat))
+  pdf(plot_filename, height=10, width=7,bg="white")
+  heatmap.2(dataMat,  
+          distfun   = function(x) as.dist(1-cor(t(x), method=dmethod)), 
+          Rowv=T, Colv=TRUE, col=cet_pal(199, name = "d1a"),trace = "none",symbreak=T,scale="none", margins=c(8,2),ylab="Genes", 
+          key.xlab = "Mean centered normalized expression", key.title = "", 
+          key.size = 1.5, labRow=genes, #breaks=seq(-2,2,length.out=201))
+           breaks = c(seq(from=-2, to=-.2, length.out = 50),
+                            seq(from=-.1, to=.2, length.out = 100),
+                            seq(from=.3, to=2, length.out = 50)) )
+  dev.off()
+
+}
+
+plotSDE = as.data.frame(assay(vst(dds))[SigGenes$row,])
+plotSDE$geneid <- rownames(plotSDE)
+plotSDEgene = merge(x = plotSDE, y = hggenes, by.x="geneid", by.y="Gene.stable.ID", all.x=TRUE)
+plotSDEgene <- plotSDEgene[complete.cases(plotSDEgene$HGNC.symbol),]
+genesSDE = plotSDEgene$HGNC.symbol
+gene_nr = dim(plotSDEgene)[1]
+finalSDE = plotSDEgene[ , which(!colnames(plotSDEgene) %in% c("HGNC.symbol","geneid","Gene.description","Gene.name"))]
+heat2_plot_list(as.matrix(finalSDE),gene_nr,"SigDE_MeanCenterVST_","pearson","ward.D2",genesSDE)
+```
+
+Different method for GO and GSEA
+
+```{r}
+rowsum.threshold <- 10 # user chosen
+fdr.threshold <- 0.5 # user chosen
+rs <- rowSums(counts(dds))
+dds <- dds[ rs > rowsum.threshold ,]
+dds <- DESeq(dds)
+res <- results(dds, independentFiltering=FALSE) # use count threshold instead of IF
+assayed.genes <- rownames(res)
+de.genes <- rownames(res)[ which(res$padj < fdr.threshold) ]
+
+deup<-SigGenes %>% filter(log2FoldChange>0)
+dedown<-SigGenes %>% filter(log2FoldChange<=0)
+
+#gene.vector=as.integer(assayed.genes%in%de.genes)
+gene.vector=as.integer(assayed.genes%in%SigGenes$row)
+up.vector=as.integer(assayed.genes%in%deup$row)
+down.vector=as.integer(assayed.genes%in%dedown$row)
+names(gene.vector)=assayed.genes
+names(up.vector)=assayed.genes
+names(down.vector)=assayed.genes
+sum(gene.vector)
+```
+
+```{r}
+library(goseq)
+library(stringr)
+supportedOrganisms() %>% filter(str_detect(Genome, "mm"))
+pwf <- nullp(gene.vector, "mm9", "ensGene")
+
+GO.wall=goseq(pwf,"mm9","ensGene")
+GO.wall.cc=goseq(pwf,"mm9","ensGene",test.cats=c("GO:CC"))
+head(GO.wall,20)
+```
+```{r}
+# Get the gene lists of "numDFinCat" in GO.wall report
+getGeneLists <- function(pwf, goterms, genome, ids){
+  gene2cat <- getgo(rownames(pwf), genome, ids)
+  cat2gene <- split(rep(names(gene2cat), sapply(gene2cat, length)),
+                    unlist(gene2cat, use.names = FALSE))
+  out <- list()
+  for(term in goterms){
+    tmp <- pwf[cat2gene[[term]],]
+    tmp <- rownames(tmp[tmp$DEgenes > 0, ])
+    out[[term]] <- tmp
+  }
+  out
+}
+```
+
+
+
+#First save the GO results to a file
+```{r}
+library(GO.db)
+library(biomaRt)
+#keytypes(org.Mm.eg.db)
+gene.vector.symbol <- mapIds(org.Mm.eg.db, names(gene.vector), column="SYMBOL",keytype = "ENSEMBL",multiVals = first)
+v2 <- gene.vector
+names(v2) <- toupper(gene.vector.symbol)
+v2<-v2[!duplicated(names(v2))]
+v2<-v2[!is.na(names(v2))]
+pwf2 <- nullp(v2, "mm9", "geneSymbol")
+GO.wall2=goseq(pwf2,"mm9","geneSymbol")
+goList <- getGeneLists(pwf2, GO.wall2$category, "mm9", "geneSymbol")
+GO.wall2$GeneID <- sapply(GO.wall2$category, function(x) paste0(goList[[x]], collapse = ","))
+
+GOorder <- GO.wall2[order(GO.wall2$over_represented_pvalue,decreasing = FALSE),]
+GOorder <- GO.wall2[which(GO.wall2$over_represented_pvalue <0.1),]
+
+wb = openxlsx::createWorkbook()
+openxlsx::addWorksheet(wb, sheetName = "GO_BP")
+openxlsx::writeDataTable(wb = wb,sheet =1, subset(GOorder,ontology =="BP"))
+
+openxlsx::addWorksheet(wb, sheetName = "GO_CC")
+openxlsx::writeDataTable(wb = wb,sheet =2, subset(GOorder,ontology =="CC"))
+
+openxlsx::addWorksheet(wb, sheetName = "GO_MF")
+openxlsx::writeDataTable(wb = wb,sheet =3, subset(GOorder,ontology =="MF"))
+
+openxlsx::saveWorkbook(wb, file=paste0(outFolder,"GOtermsALLGeneSymbol.xlsx"), overwrite=T)
+```
+#Plot GO results
+
+```{r}
+library(dplyr)
+pdf(paste0(outFolder,"GO_pathways_top10_de.pdf"))
+GO.wall %>%
+    top_n(10, wt=-over_represented_pvalue) %>% 
+    mutate(hitsPerc=numDEInCat*100/numInCat) %>% 
+    ggplot(aes(x=hitsPerc, 
+               y=term, 
+               colour=over_represented_pvalue, 
+               size=numDEInCat)) +
+        geom_point() +
+        expand_limits(x=0) +
+        labs(x="Hits (%)", y="GO term", colour="p value", size="Count")
+
+dev.off()
+```
+
+```{r}
+library(dplyr)
+library(scales)
+n=20
+pdf(paste0(outFolder,"GO_pathways_top",n,".pdf"))
+ggplot(head(GO.wall[order(GO.wall$over_represented_pvalue,decreasing = FALSE),],n),aes(y=-log10(over_represented_pvalue), 
+               x=reorder(term, -over_represented_pvalue), fill = "blue"
+              )) +
+        geom_col(stat='identity', colour="black") + coord_flip()  + labs(y="-log10(p-value)", x="GO term",fill="")+
+        scale_fill_manual(values="deepskyblue3") + guides(fill=FALSE) + theme_classic()
+        
+dev.off()
+```
+
+
+Split up and down regulated genes: negative teNK, positive hNK
+
+```{r}
+pwup <- nullp(up.vector, "mm9", "ensGene")
+pwdown<- nullp(down.vector, "mm9", "ensGene")
+
+GO.up=goseq(pwup,"mm9","ensGene")
+GO.down=goseq(pwdown,"mm9","ensGene")
+head(GO.up,20)
+```
+
+```{r}
+GO.up$type <- "up"
+GO.down$type <- "down"
+n=30
+#ont = c("CC","MF","BP")
+ont = c("BP")
+gos <- rbind(GO.down,GO.up)
+gos_th <- gos %>% filter(term %in% c(head(GO.down$term,n),head(GO.up$term,n)) ) %>% filter(ontology %in% ont)
+
+pdf(paste0(outFolder,"GO_pathways_each",n,".pdf"),width = 16,height=10)
+ggplot(gos[gos$term %in% gos_th$term,], aes(x=reorder(term, -over_represented_pvalue,max), y=-log10(over_represented_pvalue) , label=over_represented_pvalue)) + 
+  geom_bar(stat='identity', aes(fill=type), width=.5, position="dodge")  +
+  scale_fill_manual(name="Expression", 
+                    labels = c("Down-regulated", "Up-regulated"), 
+                    values = c("down"="cyan3", "up"="maroon2")) + 
+  labs(title= "Biological process", y="-log10(p-value)", x= "GO term") + 
+  coord_flip() + theme_classic()+  theme(text = element_text(size=22),legend.position = c(0.75, 0.1))
+dev.off()
+```
+
+
+cherry pick
+```{r}
+gos <- rbind(GO.down,GO.up)
+gos<-gos[order(gos$over_represented_pvalue),]
+ngos=4
+progos<-head(gos[grep("proliferation",gos$term),] %>% filter(over_represented_pvalue<0.0005)%>% filter(ontology %in% "BP"),ngos)
+apopgos<-head(gos[grep("apopto",gos$term),] %>% filter(over_represented_pvalue<0.0005)%>% filter(ontology %in% "BP"),ngos)
+immpgos<-head(gos[grep("immune",gos$term),] %>% filter(over_represented_pvalue<0.0005)%>% filter(ontology %in% "BP"),ngos)
+adgos<-head(gos[grep("adhesion",gos$term),] %>% filter(over_represented_pvalue<0.0005)%>% filter(ontology %in% "BP"),ngos)
+metgos<-head(gos[grep("metabol",gos$term),] %>% filter(over_represented_pvalue<0.0005)%>% filter(ontology %in% "BP"),ngos)
+pdf(paste(outFolder,"GO_pathways_select_terms_",ngos,".pdf",sep = ""),width = 17,height=7)
+ggplot(gos[gos$term %in% c(apopgos$term,progos$term,immpgos$term,adgos$term,metgos$term),], aes(x=reorder(term, -over_represented_pvalue,max), 
+                                                                         y=-log10(over_represented_pvalue) , label=over_represented_pvalue)) + 
+  geom_bar(stat='identity', aes(fill=type), width=.5, position="dodge")  +
+  scale_fill_manual(name="Expression", 
+                    labels = c("Down-regulated teNK", "Up-regulated teNK"), 
+                    values = c("down"="cyan3", "up"="maroon2")) + 
+  labs(title= "Biological process", y="-log10(p-value)", x= "GO term") +   scale_x_discrete(labels = function(x) str_wrap(x, width = 50)) +
+  coord_flip() + theme_classic() +  theme(text = element_text(size=22),legend.position = c(0.75, 0.1))
+dev.off()
+```
+
+
+
+
+```{r}
+#save.image('NK_figures.rda')
+```
+
+
+Characterize the ImmCC genes that split between resting and active NK cells
+
+Bar graph of genes from the ImmuCC gene signature.
+Color the bar chart based on ImmuCC direction.
+
+```{r immuCC-fig3}
+immcc <- read.table('ImmuCC_Genes_Dir.txt',head=FALSE)
+immcc <- as.data.table(immcc)
+immcc$V1 <- toupper(immcc$V1)
+
+
+prefix = "bar"
+#pdf(paste("ImmuCCgenes_test_",prefix,".pdf",sep = ""))
+dataimm <- allresults %>% filter(HGNC.symbol %in% immcc$V1)
+dataimm <- merge(x=dataimm,y=immcc,by.x="HGNC.symbol",by.y="V1")
+dataimm <- dataimm[!duplicated(dataimm$HGNC.symbol),]
+pdf(paste(outFolder,"ImmuCCgenes_colorNKanno_noLab_",prefix,".pdf",sep = ""))
+ggplot(dataimm,aes(y=l2fc, 
+               x=reorder(HGNC.symbol, l2fc), fill = V2 )) +
+        geom_col()  + ylab("")+
+        labs(y="log2FC teNK vs. hNK", x="Gene",fill="NK characterization")+
+       scale_fill_manual(values = c("active" = "darkgoldenrod1", "resting" = "mediumorchid4"))  + theme_classic() +#guides(fill=FALSE)
+      theme(axis.text.x = element_blank())
+dev.off()
+write.table(x=dataimm[order(dataimm$l2fc),"HGNC.symbol"], file="ImmuCC_order_list.txt",sep = "\t",quote = FALSE,row.names = FALSE,col.names = c("Gene"))
+
+```
+
+
