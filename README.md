@@ -1,11 +1,9 @@
-# CACTI/Proximity Test
-Source code for CACTI and Proximity tests for use in spatial transcriptomics \
-Code for individual function used for CACTI and the spatial proximity test can be found in CACTI_PROXIMITY_FUNCTIONS.R
+# CTD2-Network Software Repository
 
-* lambda_calc computes the maximum lambda value such that the classification error with respect to some low resolution classification is below a threshold alpha
-* res_calc determines a resolution of louvain clustering such that the resulting number of clusters produced is within some pre-specified range
-* prune_clust tests to see if the clusters found by CACTI are significantly dissimilar from one another 
-* proximity_test performs the similarity test outlined in the materials and methods  
+This repository contains software created by Cancer Target Discovery and Development (CTD2) Centers, <https://ocg.cancer.gov/programs/ctd2>.
 
-CACTI_Aggregated_Patient_Data.R is a sample usage of CACTI and cluster_analysis.R is a usage of the proximity test.\
-Dropbox Link To data needed to run analysis can be found here: https://www.dropbox.com/s/g6wqdawtlbzj32w/CODEX_Aggr_Data.zip?dl=0
+The repository is organized with top-level directories corresponding to individual CTD2 centers, and within each Center-level directory sub-directories for each software project.
+
+# Licensing
+
+The Unlicense, available from <https://unlicense.org>, is the default license for software in this repository. If a subdirectory contains a license file (a file whose name, converted to uppercase, matches LICENSE, and which may have any extension or no extension), that license applies to that directory and all subdirectories, unless superseded by a subsequence license file deeper in the path.
