@@ -1,8 +1,8 @@
 # CTD2-Network Software Repository
 
-This repository contains software created by Cancer Target Discovery and Development (CTD2) Centers, <https://ocg.cancer.gov/programs/ctd2>.
+This repository contains software created by Cancer Target Discovery and Development (CTD²) Centers, <https://ocg.cancer.gov/programs/ctd2>.
 
-The repository is organized with top-level directories corresponding to individual CTD2 centers. Within each Center-level directory are sub-directories for each software project.
+The repository is organized with top-level directories corresponding to individual CTD² centers. Within each Center-level directory are sub-directories for each software project.
 
 # License
 
