@@ -1,14 +1,14 @@
 # Triple-negative breast cancer metastasis involves complex epithelial-mesenchymal transition dynamics and requires vimentin
 
-## Data_TNBC
-
-Holds the data, also deposited in NCBI Geo as
-https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE149299
-
 ## EMT_Ewald
 
 Holds the source code, added as a submodule linked to of the main repository at
 https://github.com/FertigLab/EMT_Ewald
+
+## Data_TNBC 
+
+Holds the data, also deposited in NCBI Geo as 
+https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE149299 
 
 ## Publication information
 
