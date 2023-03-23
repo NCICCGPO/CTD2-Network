@@ -5,9 +5,9 @@
 Holds the data, also deposited in NCBI Geo as
 https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE149299
 
-## Source_TNCB
+## EMT_Ewald
 
-Holds the source code also available as
+Holds the source code, added as a submodule linked to of the main repository at
 https://github.com/FertigLab/EMT_Ewald
 
 ## Publication information
