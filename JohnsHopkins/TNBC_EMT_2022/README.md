@@ -1,17 +1,27 @@
 # Triple-negative breast cancer metastasis involves complex epithelial-mesenchymal transition dynamics and requires vimentin
+
 ## Data_TNBC
+
 Holds the data, also deposited in NCBI Geo as
 https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE149299
+
 ## Source_TNCB
+
 Holds the source code also available as
 https://github.com/FertigLab/EMT_Ewald
+
 ## Publication information
+
 PubMed: https://pubmed.ncbi.nlm.nih.gov/35921474/
+
 Full text, journal:
 https://www.science.org/doi/10.1126/scitranslmed.abn7571
+
 Full text, PMC:
 https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9801390/
+
 ## PubMed Abstract
+
 1. Sci Transl Med. 2022 Aug 3;14(656):eabn7571. doi: 10.1126/scitranslmed.abn7571. 
 Epub 2022 Aug 3.
 
