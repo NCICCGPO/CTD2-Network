@@ -5,9 +5,9 @@
 Holds the source code, added as a submodule linked to of the main repository at
 https://github.com/FertigLab/EMT_Ewald
 
-## Data_TNBC 
+## Data
 
-Holds the data, also deposited in NCBI Geo as 
+Data sets are deposited in NCBI Geo and SRA as 
 https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE149299 
 
 ## Publication information
