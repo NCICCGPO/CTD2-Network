@@ -1,4 +1,4 @@
-#An immunogenetic basis for lung cancer risk
+# An immunogenetic basis for lung cancer risk
 
 This repository contains the script to reproduce the single-cell analyses and figures in Krishna et al Science 2024 of the Samsung lung cancer dataset in Kim et al Nat Comm 2020. Supplementary files for the single cell analysis results are also housed here.
 
